@@ -1,0 +1,211 @@
+-- Books Table !!
+CREATE TABLE Books (
+   Book_ID INT NOT NULL,
+   Book_Title VARCHAR2(255) NOT NULL,
+   Publication_Date DATE,
+   Book_Price INT NOT NULL,
+   Publisher_ID INT NOT NULL,
+   CONSTRAINT PK_Books PRIMARY KEY (Book_ID),
+   CONSTRAINT FK_Books_Publisher FOREIGN KEY (Publisher_ID) REFERENCES Publishers(Publisher_ID)
+);
+ 
+-- Authors Table !!
+CREATE TABLE Authors (
+   Author_ID INT NOT NULL,
+   Author_Name VARCHAR2(255) NOT NULL,
+   CONSTRAINT PK_Authors PRIMARY KEY (Author_ID)
+);
+
+-- Book Authors Table !!
+CREATE TABLE BookAuthors (
+   Book_ID INT NOT NULL,
+   Author_ID INT NOT NULL,
+   CONSTRAINT PK_BookAuthors PRIMARY KEY (Book_ID, Author_ID),
+   CONSTRAINT FK_BookAuthors_Book FOREIGN KEY (Book_ID) REFERENCES Books(Book_ID),
+   CONSTRAINT FK_BookAuthors_Author FOREIGN KEY (Author_ID) REFERENCES Authors(Author_ID)
+);
+
+-- Publishers Table!!
+CREATE TABLE Publishers (
+   Publisher_ID INT NOT NULL,
+   Publisher_Name VARCHAR2(255) NOT NULL,
+   CONSTRAINT PK_Publishers PRIMARY KEY (Publisher_ID)
+);
+
+-- Categories Table !!
+CREATE TABLE Categories (
+   Category_ID INT NOT NULL,
+   Category_Name VARCHAR2(255) NOT NULL,
+   CONSTRAINT PK_Categories PRIMARY KEY (Category_ID)
+);
+
+-- Book Categories Table !!
+CREATE TABLE BookCategories (
+   Book_ID INT NOT NULL,
+   Category_ID INT NOT NULL,
+   CONSTRAINT PK_BookCategories PRIMARY KEY (Book_ID, Category_ID),
+   CONSTRAINT FK_BookCategories_Book FOREIGN KEY (Book_ID) REFERENCES Books(Book_ID),
+   CONSTRAINT FK_BookCategories_Category FOREIGN KEY (Category_ID) REFERENCES Categories(Category_ID)
+);
+
+-- Orders Table !!
+CREATE TABLE Orders (
+   Order_ID INT NOT NULL,
+   Customer_ID INT NOT NULL,
+   Order_Date DATE NOT NULL,
+   Total INT NOT NULL,
+   CONSTRAINT PK_Orders PRIMARY KEY (Order_ID),
+   CONSTRAINT FK_Orders_Customer FOREIGN KEY (Customer_ID) REFERENCES Customers(Customer_ID)
+);
+
+-- Order Items Table !!
+CREATE TABLE OrderItems (
+   Order_Item_ID INT NOT NULL,
+   Order_ID INT NOT NULL,
+   Book_ID INT NOT NULL,
+   Quantity INT NOT NULL,
+   CONSTRAINT PK_OrderItems PRIMARY KEY (Order_Item_ID),
+   CONSTRAINT FK_OrderItems_Order FOREIGN KEY (Order_ID) REFERENCES Orders(Order_ID),
+   CONSTRAINT FK_OrderItems_Book FOREIGN KEY (Book_ID) REFERENCES Books(Book_ID)
+);
+
+-- Customers Table !!
+CREATE TABLE Customers (
+   Customer_ID INT NOT NULL,
+   FirstName VARCHAR2(255) NOT NULL,
+   LastName VARCHAR2(255) NOT NULL,
+   Email VARCHAR2(255) NOT NULL,
+   City VARCHAR2(255),
+   CONSTRAINT PK_Customers PRIMARY KEY (Customer_ID)
+);
+
+
+\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+
+CREATE OR REPLACE PROCEDURE GroupBooksByPublication_Date IS
+   publication_date Date;
+   num_books INTEGER;
+BEGIN
+   FOR r IN (
+      SELECT Publication_Date, COUNT(*) AS NumBooks
+      FROM Books
+      GROUP BY Publication_Date
+   ) LOOP
+      publication_date := r.Publication_Date;
+      num_books := r.NumBooks;
+      DBMS_OUTPUT.PUT_LINE('Publication Date: ' || publication_date || ', Number of Books: ' || num_books);
+   END LOOP;
+END;
+
+
+
+BEGIN
+   GroupBooksByPublication_Date;
+END;
+
+
+\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+
+
+CREATE OR REPLACE FUNCTION GetNumBooks RETURN INTEGER IS
+   NumBooks INTEGER;
+BEGIN
+   SELECT COUNT(*) INTO NumBooks
+   FROM Books;
+   RETURN NumBooks;
+END;
+
+
+DECLARE
+   num_records INteger;
+BEGIN
+   num_records := GetNumBooks();
+   dbms_output.put_line('Number of records: ' || num_records);
+END;
+
+
+\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+
+CREATE OR REPLACE PROCEDURE UpdateBookPrice(BookID IN Number, NewPrice IN NUmber) AS
+   v_count NUMBER;
+BEGIN
+   UPDATE Books
+   SET book_Price = NewPrice
+   WHERE Book_ID = BookID;
+
+   v_count := SQL%ROWCOUNT;
+   
+   IF v_count = 1 THEN
+      DBMS_OUTPUT.PUT_LINE('Book updated successfully.');
+   ELSE
+      DBMS_OUTPUT.PUT_LINE('Error updating book.');
+   END IF;
+END;
+
+
+
+BEGIN
+   UpdateBookPrice(102, 900000);
+END;
+
+
+select * from books where book_id = 102
+
+
+
+\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+
+
+
+CREATE OR REPLACE PROCEDURE SearchBook(title IN VARCHAR2) IS
+   searchError exception;
+   price number;
+   pub_date date;
+BEGIN
+   IF LENGTH(title) < 5 THEN
+      RAISE searchError;
+    Else
+        select book_price, publication_date into price, pub_date 
+        from books
+        where book_title = title;
+
+        dbms_output.put_line(' Title: ' || title || ' Price: ' || price || ' Publication date: ' || pub_date);
+
+   END IF;
+
+    exception
+        when searchError then
+            dbms_output.put_line('The length of book would be greater than 5 characters');
+        when others then
+            dbms_output.put_line('Ондай кітап жоқ!');
+   
+END;
+
+
+
+begin 
+    SearchBook('ыгтгрытргфап');
+end;
+    
+    
+  
+  \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+  
+  
+  CREATE OR REPLACE TRIGGER DisplayNumBooksBeforeInsert
+BEFORE INSERT ON Books
+FOR EACH ROW
+DECLARE
+   NumBooks INTEGER;
+BEGIN
+   SELECT COUNT(*) INTO NumBooks FROM Books;
+   DBMS_OUTPUT.PUT_LINE('Current number of books: ' || NumBooks);
+END;
+
+
+insert into Books(Book_id, BOOK_TITLE, PUBLICATION_DATE, BOOK_PRICE, PUBLISHER_ID) values(202, 'Дәукенді қуған Аяжан', '03/03/2008', 200000, 17);
+
+
+
+
+\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
